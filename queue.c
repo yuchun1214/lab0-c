@@ -84,6 +84,8 @@ bool q_insert_head(queue_t *q, char *s)
         return false;
     }
     newh = list_ele_new(s);
+    if (!newh)  // fail to malloc
+        return false;
     newh->next = q->head;
     q->head = newh;
     ++q->size;
@@ -110,6 +112,8 @@ bool q_insert_tail(queue_t *q, char *s)
     }
     list_ele_t *newt;
     newt = list_ele_new(s);
+    if (!newt)
+        return false;
     if (q->tail) {
         q->tail->next = newt;
     } else {
@@ -133,13 +137,15 @@ bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
 {
     /* TODO: You need to fix up this code. */
     /* TODO: Remove the above comment when you are about to implement. */
-    if (q->size && q) {
+    if (q && q->size) {
         list_ele_t *head = q->head;
         q->head = q->head->next;
         if (sp) {
-            strncpy(sp, head->value, bufsize * sizeof(char));
+            strncpy(sp, head->value, (bufsize - 1) * sizeof(char));
+            sp[bufsize - 1] = '\0';
         }
         --q->size;
+        list_ele_free(head);
         return true;
     }
     return false;
@@ -261,6 +267,68 @@ void list_quick_sort(list_ele_t **ele, list_ele_t **tail)
     return;
 }
 
+list_ele_t *list_merge(list_ele_t *lhs, list_ele_t *rhs, list_ele_t **tail)
+{
+    list_ele_t *result, *result_iter;
+
+    if (strcmp(lhs->value, rhs->value) < 0) {
+        result = lhs;
+        lhs = lhs->next;
+    } else {
+        result = rhs;
+        rhs = rhs->next;
+    }
+
+    result_iter = result;
+
+    while (lhs && rhs) {
+        if (strcmp(lhs->value, rhs->value) < 0) {
+            result_iter->next = lhs;
+            lhs = lhs->next;
+        } else {
+            result_iter->next = rhs;
+            rhs = rhs->next;
+        }
+        result_iter = result_iter->next;
+    }
+    while (lhs) {
+        result_iter = result_iter->next = lhs;
+        lhs = lhs->next;
+    }
+    while (rhs) {
+        result_iter = result_iter->next = rhs;
+        rhs = rhs->next;
+    }
+    *tail = result_iter;
+    return result;
+}
+
+list_ele_t *list_merge_sort(list_ele_t *head, list_ele_t **tail)
+{
+    if (!head || !(head->next))
+        return head;
+
+    list_ele_t *fast = head->next;
+    list_ele_t *slow = head;
+
+    // find the middle of list
+    while (fast && fast->next) {
+        slow = slow->next;
+        fast = fast->next->next;
+    }
+
+    fast = slow->next;
+    slow->next = NULL;
+    // printf("Slow : "); show(head);
+    // printf("Fast : "); show(fast);
+    list_ele_t *lhs = list_merge_sort(head, tail);
+    list_ele_t *rhs = list_merge_sort(fast, tail);
+    // list_ele_t * result = list_merge(lhs, rhs);
+    // printf("Merge Result : "); show(result);
+    // return result;
+    return list_merge(lhs, rhs, tail);
+}
+
 
 /*
  * Sort elements of queue in ascending order
@@ -271,6 +339,10 @@ void q_sort(queue_t *q)
 {
     /* TODO: You need to write the code for this function */
     /* TODO: Remove the above comment when you are about to implement. */
-    list_quick_sort(&q->head, &q->tail);
+    // list_quick_sort(&q->head, &q->tail);
+    if (q) {
+        q->head = list_merge_sort(q->head, &q->tail);
+    }
+    // printf("Tail : %s \n", q->tail->value);
     return;
 }
