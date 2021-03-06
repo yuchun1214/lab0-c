@@ -1,6 +1,8 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/cdefs.h>
 
 #include "harness.h"
 #include "queue.h"
@@ -190,56 +192,74 @@ void q_reverse(queue_t *q)
     q->tail->next = NULL;
 }
 
-list_ele_t *list_concat(list_ele_t **lhs, list_ele_t *rhs)
+list_ele_t *list_concat(list_ele_t **lhs,
+                        list_ele_t **lhs_tail,
+                        list_ele_t *rhs)
 {
-    while (*lhs) {
-        lhs = &((*lhs)->next);
+    if (!*lhs) {  // if lhs is null
+        *lhs = rhs;
+        *lhs_tail = rhs;
+    } else {
+        (*lhs_tail)->next = rhs;
+        *lhs_tail = (rhs) ? (rhs) : *lhs_tail;
     }
-    *lhs = rhs;
     return *lhs;
 }
 
-void list_ele_add_node(list_ele_t **ele, list_ele_t *node)
+void list_ele_add_node(list_ele_t **head, list_ele_t **tail, list_ele_t *node)
 {
-    if (*ele) {
-        node->next = (*ele)->next;
-        (*ele)->next = node;
-    } else {
-        *ele = node;
-        node->next = NULL;
+    node->next = NULL;
+    if (*head) {  // test if ele is null or not
+        // the newest version is add node on the tail
+        (*tail)->next = node;  // connection
+        (*tail) = node;        // move the tail
+
+
+        // the old version is add node on the head
+        // node->next = (*ele)->next;
+        // (*ele)->next = node;
+
+    } else {  // if head is NULL; both head and tail point on the node
+        *head = node;
+        *tail = node;
     }
 }
 
-list_ele_t *list_quick_sort(list_ele_t *ele)
+void list_quick_sort(list_ele_t **ele, list_ele_t **tail)
 {
-    if (!ele) {
-        return ele;
+    if (!*ele) {
+        return;
     }
-    list_ele_t *lhs, *rhs;
+    list_ele_t *lhs, *rhs, *lhs_tail, *rhs_tail;
     list_ele_t *pivot, *iter, *next;
-    lhs = rhs = NULL;
-    pivot = ele;
-    iter = pivot->next;
+    lhs_tail = rhs_tail = lhs = rhs = NULL;
+
+
+    pivot = *ele;        // set pivot point to the first element of the list
+    iter = pivot->next;  // iterator start on the second element
     pivot->next = NULL;
+
     while (iter) {
         next = iter->next;
         if (strcmp(iter->value, pivot->value) < 0) {
-            list_ele_add_node(&lhs, iter);
+            list_ele_add_node(&lhs, &lhs_tail, iter);
+            // assert(lhs_tail == iter); // check if lhs_tail certantily move
         } else {
-            list_ele_add_node(&rhs, iter);
+            list_ele_add_node(&rhs, &rhs_tail, iter);
+            // assert(rhs_tail == iter); // check if rhs_tail move
         }
         iter = next;
     }
-    lhs = list_quick_sort(lhs);
-    rhs = list_quick_sort(rhs);
 
-    list_ele_t *result = NULL;
-    list_concat(&result, lhs);
-    list_concat(&result, pivot);
-    list_concat(&result, rhs);
-    return result;
+    list_quick_sort(&lhs, &lhs_tail);
+    list_quick_sort(&rhs, &rhs_tail);
+
+    list_concat(&lhs, &lhs_tail, pivot);
+    list_concat(&lhs, &lhs_tail, rhs);
+    *ele = lhs;
+    *tail = (rhs_tail) ? rhs_tail : lhs_tail;
+    return;
 }
-
 
 
 /*
@@ -251,12 +271,6 @@ void q_sort(queue_t *q)
 {
     /* TODO: You need to write the code for this function */
     /* TODO: Remove the above comment when you are about to implement. */
-    q->head = list_quick_sort(q->head);
-    // show(q->head);
-    // list_ele_t * node = q->head;
-    // while(node->next) {
-    // 	node = node->next;
-    // }
-    // q->tail = node;
+    list_quick_sort(&q->head, &q->tail);
     return;
 }
