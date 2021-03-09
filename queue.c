@@ -267,7 +267,7 @@ void list_quick_sort(list_ele_t **ele, list_ele_t **tail)
     return;
 }
 
-list_ele_t *list_merge(list_ele_t *lhs, list_ele_t *rhs, list_ele_t **tail)
+list_ele_t *list_merge(list_ele_t *lhs, list_ele_t *rhs)
 {
     list_ele_t *result, *result_iter;
 
@@ -291,19 +291,15 @@ list_ele_t *list_merge(list_ele_t *lhs, list_ele_t *rhs, list_ele_t **tail)
         }
         result_iter = result_iter->next;
     }
-    while (lhs) {
-        result_iter = result_iter->next = lhs;
-        lhs = lhs->next;
+    if (lhs) {
+        result_iter->next = lhs;
+    } else if (rhs) {
+        result_iter->next = rhs;
     }
-    while (rhs) {
-        result_iter = result_iter->next = rhs;
-        rhs = rhs->next;
-    }
-    *tail = result_iter;
     return result;
 }
 
-list_ele_t *list_merge_sort(list_ele_t *head, list_ele_t **tail)
+list_ele_t *list_merge_sort(list_ele_t *head)
 {
     if (!head || !(head->next))
         return head;
@@ -321,12 +317,9 @@ list_ele_t *list_merge_sort(list_ele_t *head, list_ele_t **tail)
     slow->next = NULL;
     // printf("Slow : "); show(head);
     // printf("Fast : "); show(fast);
-    list_ele_t *lhs = list_merge_sort(head, tail);
-    list_ele_t *rhs = list_merge_sort(fast, tail);
-    // list_ele_t * result = list_merge(lhs, rhs);
-    // printf("Merge Result : "); show(result);
-    // return result;
-    return list_merge(lhs, rhs, tail);
+    list_ele_t *lhs = list_merge_sort(head);
+    list_ele_t *rhs = list_merge_sort(fast);
+    return list_merge(lhs, rhs);
 }
 
 
@@ -341,7 +334,12 @@ void q_sort(queue_t *q)
     /* TODO: Remove the above comment when you are about to implement. */
     // list_quick_sort(&q->head, &q->tail);
     if (q) {
-        q->head = list_merge_sort(q->head, &q->tail);
+        q->head = list_merge_sort(q->head);
+        list_ele_t *iter = q->head;
+        if (iter)
+            while (iter->next)
+                iter = iter->next;
+        q->tail = iter;
     }
     // printf("Tail : %s \n", q->tail->value);
     return;
