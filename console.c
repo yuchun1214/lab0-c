@@ -665,6 +665,7 @@ bool run_console(char *infile_name)
     } else {
         while (!cmd_done())
             cmd_select(0, NULL, NULL, NULL, NULL);
+        freeHistory();
     }
 
     return err_cnt == 0;

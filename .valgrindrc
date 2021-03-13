@@ -2,4 +2,3 @@
 --memcheck:leak-check=full
 --memcheck:show-leak-kinds=all
 --error-exitcode=1
---show-reachable=no

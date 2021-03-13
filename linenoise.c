@@ -104,6 +104,7 @@
  */
 
 #include "linenoise.h"
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
@@ -1187,13 +1188,14 @@ void linenoiseFree(void *ptr)
 
 /* Free the history, but does not reset it. Only used when we have to
  * exit() to avoid memory leaks are reported by valgrind & co. */
-static void freeHistory(void)
+void freeHistory(void)
 {
     if (history) {
         int j;
 
-        for (j = 0; j < history_len; j++)
+        for (j = 0; j < history_len; j++) {
             free(history[j]);
+        }
         free(history);
     }
 }
@@ -1234,6 +1236,7 @@ int linenoiseHistoryAdd(const char *line)
     /* Add an heap allocated copy of the line in the history.
      * If we reached the max length, remove the older line. */
     linecopy = strdup(line);
+    // printf("Add line %s\n", linecopy);
     if (!linecopy)
         return 0;
     if (history_len == history_max_len) {
@@ -1243,6 +1246,7 @@ int linenoiseHistoryAdd(const char *line)
     }
     history[history_len] = linecopy;
     history_len++;
+
     return 1;
 }
 
